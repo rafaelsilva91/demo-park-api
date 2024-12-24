@@ -19,6 +19,7 @@ import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.List;
 @RequestMapping(value = "api/v1/usuarios")
 @CrossOrigin(origins = "*")
 public class UsuarioController {
+
     private final UsuarioService usuarioService;
 
     @Operation(summary = "Criar um novo usuário", description = "Recurso para criar um novo usuario",
@@ -54,6 +56,7 @@ public class UsuarioController {
                             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorMessage.class)))
             })
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') OR (hasRole('CLIENTE') AND #id == authentication.principal.id)")
     public ResponseEntity<UsuarioResponseDto> findById(@PathVariable Long id){
         Usuario user = usuarioService.buscarPorId(id);
         return ResponseEntity.ok(UsuarioMapper.toDto(user));
@@ -66,6 +69,7 @@ public class UsuarioController {
                             array = @ArraySchema(schema = @Schema(implementation = UsuarioResponseDto.class))))
             })
     @GetMapping("/")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UsuarioResponseDto>> findAll(){
         List<Usuario> users = usuarioService.findAll();
         return ResponseEntity.ok(UsuarioMapper.toListDto(users));
@@ -81,6 +85,7 @@ public class UsuarioController {
                             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorMessage.class)))
             })
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENTE') AND (#id == authentication.principal.id)")
     public ResponseEntity<Void> updatePassword(@PathVariable Long id,
                                                @Valid @RequestBody UsuarioSenhaDto dto){
         Usuario user = usuarioService.editPassword(id,
